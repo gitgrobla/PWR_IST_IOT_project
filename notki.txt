@@ -1,0 +1,17 @@
+przynajmniej 2 zestawy raspberry
+
+z mozliwoscia natychmiastowejgo rozszerzenia o inny zespol
+
+serwer MQTT
+
+nie przez polaczenie lokalne tylko przez adres IP
+
+dolozenie drugiej czesci - szyfrowanie 
+
+BAZA DANYCH
+
+proces klienta (klientów)
+proces serwera
+
+krótki raport sprawozdanie - prezentacja
+
