@@ -4,14 +4,15 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 
 REQUESTS_TOPICS = "parking/requests"
-CLIENT_TOPIC_URI = "parking/client/"
+CLIENT_TOPIC_URI = "parking/client"
 broker = "localhost"
 client = mqtt.Client()
-client.connect(broker)
 
+# === CONNECTION ===
 
-def on_message(client, userdata, message):
-    print(f"Received message '{message.payload.decode()}' on topic '{message.topic}'")
+def connect():
+    client.connect(broker)
+    client.loop_start()
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected with result code {rc}")
@@ -21,10 +22,37 @@ def on_disconnect(client, userdata, rc):
     print(f"Disconnected with result code {rc}")
     client.loop_stop()
 
+# === MESSAGE HANDLING ===
+
+def on_message(client, userdata, message):
+    _decoded = message.payload.decode()
+    _split = _decoded.split(":")
+    if(len(_split) != 2):
+        print("SERVER: Received malformed message")
+        return
+    _id = _split[0]
+    _uid = _split[1]
+    print(f"SERVER: Received message '{message.payload.decode()}' on topic '{message.topic}'")
+
+    # szukamy w DB po nr karty
+    # jesli ta karta jest w DB no to 1 a jesli nie to 0
+
+    send_response(_id, 1)
+
+def send_response(id, status):
+    print('SERVER: Sending response to client')
+    client.publish(f'{CLIENT_TOPIC_URI}/{id}', status)
+
+
+# === MAIN ===
+
+connect()
+
 client.on_connect = on_connect
 client.on_message = on_message
 client.on_disconnect = on_disconnect
 
-client.loop_forever()
+while True:
+    a = 1
 
 client.disconnect()

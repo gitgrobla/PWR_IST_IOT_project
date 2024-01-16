@@ -10,16 +10,11 @@ REQUESTS_TOPICS = "parking/requests"
 broker = "localhost"
 client = mqtt.Client()
 
+# === CONNECTION ===
+
 def connect():
     client.connect(broker)
     client.loop_start()
-
-# server gave a response to my request
-def on_message(client, userdata, message):
-    global REQ_STATUS
-    if REQ_STATUS:
-        print(f"Received message '{message.payload.decode()}' on topic '{message.topic}'")
-        REQ_STATUS = False
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected with result code {rc}")
@@ -32,20 +27,40 @@ def on_disconnect(client, userdata, rc):
     print(f"Disconnected with result code {rc}")
     client.loop_stop()
 
+# === MESSAGE HANDLING ===
+
+# server gave a response to my request
+def on_message(client, userdata, message):
+    global REQ_STATUS
+    if REQ_STATUS == True:
+        _decoded = message.payload.decode()
+        # tutaj logika reakcji na response servera
+        if(_decoded == '1'):
+            print('SERVER: Request accepted')
+        else:
+            print('SERVER: Request denied')
+
+        REQ_STATUS = False
+
+    
+def send_message(card_id):
+    global REQ_STATUS
+    temp = f"{MY_ID}:{card_id}"
+    client.publish(REQUESTS_TOPICS, temp)
+    REQ_STATUS = True
+
+# === MAIN ===
+
 client.on_connect = on_connect
 client.on_message = on_message
-client.on_log = on_log
+# client.on_log = on_log
 client.on_disconnect = on_disconnect
 
 connect()
 
-def send_message(card_id):
-    temp = f"{MY_ID}:{card_id}"
-    client.publish(REQUESTS_TOPICS, card_id)
-    REQ_STATUS = True
-
 while(True):
     if input() == 'cmd':
+        #w tym miejscu w zasadzie musimy wpisac logike skanowania RFID
         send_message('000000000')
 
 
