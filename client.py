@@ -6,6 +6,9 @@ from mfrc522 import MFRC522
 import board
 import neopixel
 import time
+from PIL import Image, ImageOps
+import lib.oled.SSD1331 as SSD1331
+
 
 MY_ID = 1
 REQ_STATUS = False
@@ -15,6 +18,20 @@ BLOCK_PERIOD = 3.0
 last_response_timestamp = datetime.timestamp(datetime.now()) - BLOCK_PERIOD
 broker = "10.108.33.122"
 client = mqtt.Client()
+
+pixels = neopixel.NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
+disp = SSD1331.SSD1331()
+disp.Init()
+disp.clear()
+
+DISPLAY_SIZE = (disp.width, disp.height)
+
+REJECTED_IMAGE = Image.open("./Images/rejected_icon.png")
+REJECTED_IMAGE = ImageOps.contain(REJECTED_IMAGE, DISPLAY_SIZE)
+ACCEPTED_IMAGE = Image.open("./Images/accepted_icon.png")
+ACCEPTED_IMAGE = ImageOps.contain(ACCEPTED_IMAGE, DISPLAY_SIZE)
+AWAITING_IMAGE = Image.open("./Images/awaiting_icon.png")
+AWAITING_IMAGE = ImageOps.contain(AWAITING_IMAGE, DISPLAY_SIZE)
 
 # === CONNECTION ===
 
@@ -51,6 +68,8 @@ def buzzer_reject():
         time.sleep(0.25)
 
 def card_accepted_alert():
+    disp.show(ACCEPTED_IMAGE, 0, 0)
+    
     pixels.fill((0, 255, 0))
     pixels.show()
     
@@ -59,7 +78,11 @@ def card_accepted_alert():
     pixels.fill((0, 0, 0))
     pixels.show()
 
+    disp.show(AWAITING_IMAGE, 0, 0)
+
 def card_rejected_alert():
+    disp.show(REJECTED_IMAGE, 0, 0)
+    
     pixels.fill((255, 0, 0))
     pixels.show()
     
@@ -67,6 +90,8 @@ def card_rejected_alert():
 
     pixels.fill((0, 0, 0))
     pixels.show()
+
+    disp.show(AWAITING_IMAGE, 0, 0)
 
 # === MESSAGE HANDLING ===
 
@@ -131,13 +156,16 @@ client.on_disconnect = on_disconnect
 
 def main():
     connect()
+    disp.show(AWAITING_IMAGE, 0, 0)
     scanning_loop()
 
 if __name__ == '__main__':
     
     try:
         main()
-    except:
+    finally:
         client.disconnect()
+        disp.clear()
+        disp.reset()
         GPIO.cleanup()
 
