@@ -6,11 +6,10 @@ import os, sys
 
 from typing import Dict
 
-# This should be changed. We can also using code create new folder/path where we can store our database. 
+# This should be changed. We can also create new folder and path where we can store our database. 
 DEFAULT_PROJECT_DATABASE_PATH = "C:\\Users\\trine\\OneDrive\\Pulpit\\STUDIA\\SEMESTR 5\\BAZY\\LABY\\iot_database.db" 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 SYSTEM_VAR_NAME = "IOT_PROJECT_DATABASE_PATH"
-
 
 class WorkRegister:
 
@@ -90,17 +89,44 @@ def create_database(db_name: str, dropped_old_db: bool = True):
             )
 
             connection.commit()
+
+            cursor.execute(
+                """CREATE TRIGGER prevent_blocked_cards_insert
+                    BEFORE INSERT ON Presences
+                    FOR EACH ROW
+                    WHEN (SELECT is_blocked FROM Cards WHERE id = NEW.card_id) = 1
+                    BEGIN
+                        -- Jeśli karta jest zablokowana, uniemożliwiamy dodanie lub aktualizację rekordu
+                        SELECT RAISE(ABORT, 'Nie można dodać rekordu dla zablokowanej karty.');
+                    END;
+                """)
+            
+            connection.commit()
+
+            cursor.execute(
+                """CREATE TRIGGER prevent_blocked_cards_update
+                    BEFORE UPDATE ON Presences
+                    FOR EACH ROW
+                    WHEN (SELECT is_blocked FROM Cards WHERE id = NEW.card_id) = 1
+                    BEGIN
+                        -- Jeśli karta jest zablokowana, uniemożliwiamy dodanie lub aktualizację rekordu
+                        SELECT RAISE(ABORT, 'Nie można modyfikować rekordu dla zablokowanej karty.');
+                    END;
+                """)
+            
+            connection.commit()
+            
             print("The new database created.")
 
     except sqlite3.Error as e:
         print("Error during connection with database: ", e, file=sys.stderr)
 
-def add_employee(name: str, last_name: str) -> bool:
+def execute_query(query: str) -> bool:
     try:
         with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
             cursor = connection.cursor()
 
-            cursor.execute(f"INSERT INTO Employees(name, last_name) VALUES ('{name}', '{last_name}')")
+            cursor.execute(query)
 
             connection.commit()
 
@@ -109,76 +135,38 @@ def add_employee(name: str, last_name: str) -> bool:
         return False;
 
     return True
+
+def add_employee(name: str, last_name: str) -> bool:
+
+    return execute_query(f"INSERT INTO Employees(name, last_name) VALUES ('{name}', '{last_name}')")
 
 def add_card(rfid: int, is_blocked: bool) -> bool:
-    try:
-        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
-            cursor = connection.cursor()
 
-            is_blocked_as_int = 1 if is_blocked else 0
+    is_blocked_as_int = 1 if is_blocked else 0
 
-            cursor.execute( f"INSERT INTO Cards(rfid, is_blocked) VALUES ({rfid}, {is_blocked_as_int})")
+    return execute_query( f"INSERT INTO Cards(rfid, is_blocked) VALUES ({rfid}, {is_blocked_as_int})")
 
-            connection.commit()
 
-    except sqlite3.Error as e:
-        print("Error during connection with database: ", e, file=sys.stderr)
-        return False;
-
-    return True
 
 def add_employee_card(card_id: int, employee_id: int) -> bool:
-    try:
-        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
-            cursor = connection.cursor()
 
-            cursor.execute(f"INSERT INTO Employees_cards(card_id, employee_id) VALUES ({card_id}, {employee_id})")
+    return execute_query(f"INSERT INTO Employees_cards(card_id, employee_id) VALUES ({card_id}, {employee_id})")
 
-            connection.commit()
-
-    except sqlite3.Error as e:
-        print("Error during connection with database: ", e, file=sys.stderr)
-        return False;
-
-    return True
 
 def add_presence(card_id: int, employee_id: int, entry_date: datetime, entry_place: int, exit_date: datetime = None,  exit_place: int = None) -> bool:
-    try:
-        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
-            cursor = connection.cursor()
 
-            exit_date_to_table = 'NULL' if exit_date == None else exit_date.strftime(DATETIME_FORMAT)
-            exit_place_to_table = 'NULL' if exit_place == None else exit_place
+    exit_date_to_table = 'NULL' if exit_date == None else exit_date.strftime(DATETIME_FORMAT)
+    exit_place_to_table = 'NULL' if exit_place == None else exit_place
 
-            cursor.execute(f"INSERT INTO Presences(card_id, employee_id, entry_date, entry_place, exit_date, exit_place) VALUES ({card_id}, {employee_id}, '{entry_date.strftime(DATETIME_FORMAT)}', {entry_place}, '{exit_date_to_table}', {exit_place_to_table} )")
+    return execute_query(f"INSERT INTO Presences(card_id, employee_id, entry_date, entry_place, exit_date, exit_place) VALUES ({card_id}, {employee_id}, '{entry_date.strftime(DATETIME_FORMAT)}', {entry_place}, '{exit_date_to_table}', {exit_place_to_table} )")
 
-            connection.commit()
-
-    except sqlite3.Error as e:
-        print("Error during connection with database: ", e, file=sys.stderr)
-        return False;
-
-    return True
 
 def add_exit(presence_id: int, exit_date: datetime, exit_place: int) -> bool:
-    if exit_date == None or exit_place == None:
-        return False
 
-    try:
-        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
-            cursor = connection.cursor()
+    exit_date_to_table = exit_date.strftime(DATETIME_FORMAT)
 
-            exit_date_to_table = exit_date.strftime(DATETIME_FORMAT)
+    return execute_query(f"UPDATE Presences SET exit_date = '{exit_date_to_table}', exit_place = {exit_place} WHERE id = {presence_id}")
 
-            cursor.execute(f"UPDATE Presences SET exit_date = '{exit_date_to_table}', exit_place = {exit_place} WHERE id = {presence_id}")
-
-            connection.commit()
-
-    except sqlite3.Error as e:
-        print("Error during connection with database: ", e, file=sys.stderr)
-        return False;
-
-    return True
 
 def get_timedelta(date1: str, date2: str) -> int:
     datetime1 = datetime.datetime.strptime(date1, DATETIME_FORMAT)
@@ -256,34 +244,43 @@ def get_all_employees_work_registers(start_date: datetime.datetime, end_date: da
         print("Error during connection with database: ", e, file=sys.stderr)
         return None;
 
+def block_card(card_id) -> bool:
+    query = f"UPDATE Cards SET is_blocked = 1 WHERE id = {card_id}"
+    return execute_query(query)
+
+def unlock_card(card_id) -> bool:
+    query = f"UPDATE Cards SET is_blocked = 0 WHERE id = {card_id}"
+    return execute_query(query)
 
 
 
 def main():
-    # db_path = get_sys_var(SYSTEM_VAR_NAME)
-    # create_database(db_path, True)
-    # add_card(1, 0)
-    # add_card(2, 1)
-    # add_card(3, 0)
-    # add_card(4, 0)
-    # add_employee("John", "Smith")
-    # add_employee("Eva", "Stone")
-    # add_employee("Donald", "Duck")
-    # add_employee_card(1, 1)
-    # add_employee_card(2, 2)
-    # add_employee_card(3, 3)
-    # add_presence(1, 1, datetime.datetime.now(), 1)
+    db_path = get_sys_var(SYSTEM_VAR_NAME)
+    create_database(db_path, True)
+    add_card(1, 0)
+    add_card(2, 1)
+    add_card(3, 0)
+    add_card(4, 0)
+    add_employee("John", "Smith")
+    add_employee("Eva", "Stone")
+    add_employee("Donald", "Duck")
+    add_employee_card(1, 1)
+    add_employee_card(2, 2)
+    add_employee_card(3, 3)
+    add_presence(1, 1, datetime.datetime.now(), 1)
     # add_presence(2, 2, datetime.datetime.now(), 2)
-    # add_presence(3, 3, datetime.datetime.now(), 3)
+    add_presence(3, 3, datetime.datetime.now(), 3)
 
     # add_exit(1, datetime.datetime(2023, 1, 14, 3, 2, 1), 10)
 
-    # wr = get_employee_work_register(1, datetime.datetime(2023, 1, 1, 0, 0, 0), datetime.datetime.now())
-    # print(wr)
+    wr = get_employee_work_register(1, datetime.datetime(2023, 1, 1, 0, 0, 0), datetime.datetime.now())
+    print(wr)
 
     wr_dict = get_all_employees_work_registers(datetime.datetime(2023, 1, 1, 0, 0, 0), datetime.datetime.now())
     for _, wr in wr_dict.items():
         print(wr)
+
+    block_card(3)
 
 
 if __name__ == '__main__':
