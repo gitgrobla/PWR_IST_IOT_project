@@ -25,3 +25,9 @@ pip install paho-mqtt
 allow_anonymous true
 listener 1883 0.0.0.0
 ```
+
+```txt
+https://www.chirpstack.io/docs/guides/mosquitto-tls-configuration.html
+http://www.steves-internet-guide.com/mosquitto-tls/
+```
+
