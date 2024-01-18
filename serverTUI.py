@@ -143,34 +143,74 @@ def tui():
             continue
 
         if(option == 1):
-            
+            tui_add_card_employee
         else if(option == 2):
             tui_add_employee()
         else if(option == 3):
-
+            print(option)
         else if(option == 4):
-
+            print(option)
         else if(option == 5):
-        
+            print(option)
 
-def tui_add_employee():
 
-    while(name != null and last_name != null)
+def get_name_and_lastname():
+        while(name != null and last_name != null)
         try:
             name = input("Name: ")
             lastName = input("Lastname:")
         except ValueError:
             print("Error input")
-            continue
+            continue 
+            
+        return name,last_name
+
+def tui_add_employee():
+
+    nameAndLastname = get_name_and_lastname()
     
-    if(add_employee(name , last_name)):
+    if(add_employee(nameAndLastname[0] , last_name[1])):
         print("Added")
     else:
         print("Database error")
 
 
 def tui_add_card_employee():
-    
+
+    nameAndLastname = get_name_and_lastname()
+
+    employeeList = get_employee_id(nameAndLastname[0] , nameAndLastname[1])
+
+    if(len(employeeList) == 0):
+        print("Wrong name and lastname")
+    else if (len(employeeList) > 1):
+
+        for employee in employeeList:
+            print(f"ID: {pracownik[0]}, Name: {pracownik[1]}, Lastname: {pracownik[2]}")
+        
+        selectedId = int(input("Enter the employee ID to choose: "))
+
+        for employee in employeeList:
+            if employee[0] == selectedId:
+                employeeId = employee[0]
+                break
+        
+        
+    else:
+        employeeId = employeeList[0][0]
+
+    if(employeeId != null):
+        cardId = scanning_loop()
+        
+        if(add_employee_card(cardId,employeeId)):
+            print("Added")
+        else:
+            print("Error database")
+    else:
+        print("Wrong name and lastname or ID")
+        
+
+
     
 
 
