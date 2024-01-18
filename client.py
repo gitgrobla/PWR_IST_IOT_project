@@ -16,7 +16,11 @@ MY_TOPIC = f"parking/client/{MY_ID}"
 REQUESTS_TOPICS = "parking/requests"
 BLOCK_PERIOD = 3.0
 last_response_timestamp = datetime.timestamp(datetime.now()) - BLOCK_PERIOD
+
+# broker config
+
 broker = "10.108.33.122"
+port = 1883
 client = mqtt.Client()
 
 pixels = neopixel.NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
@@ -27,16 +31,14 @@ disp.clear()
 DISPLAY_SIZE = (disp.width, disp.height)
 
 REJECTED_IMAGE = Image.open("./Images/rejected_icon.png")
-REJECTED_IMAGE = ImageOps.contain(REJECTED_IMAGE, DISPLAY_SIZE)
 ACCEPTED_IMAGE = Image.open("./Images/accepted_icon.png")
-ACCEPTED_IMAGE = ImageOps.contain(ACCEPTED_IMAGE, DISPLAY_SIZE)
 AWAITING_IMAGE = Image.open("./Images/awaiting_icon.png")
-AWAITING_IMAGE = ImageOps.contain(AWAITING_IMAGE, DISPLAY_SIZE)
+
 
 # === CONNECTION ===
 
 def connect():
-    client.connect(broker)
+    client.connect(broker, port)
     client.loop_start()
 
 def on_connect(client, userdata, flags, rc):
@@ -51,7 +53,13 @@ def on_disconnect(client, userdata, rc):
     client.loop_stop()
 
 # === ALERTS ===
-    
+
+def showScreen(image):
+    disp.clear()
+    #image = Image.open(path)
+    #draw = ImageDraw.Draw(image)
+    disp.ShowImage(image,0,0)
+
 def buzzer_state(state):
      GPIO.output(buzzerPin, not state)  # pylint: disable=no-member
 
@@ -68,7 +76,7 @@ def buzzer_reject():
         time.sleep(0.25)
 
 def card_accepted_alert():
-    disp.show(ACCEPTED_IMAGE, 0, 0)
+    showScreen(ACCEPTED_IMAGE)
     
     pixels.fill((0, 255, 0))
     pixels.show()
@@ -78,10 +86,10 @@ def card_accepted_alert():
     pixels.fill((0, 0, 0))
     pixels.show()
 
-    disp.show(AWAITING_IMAGE, 0, 0)
+    showScreen(AWAITING_IMAGE)
 
 def card_rejected_alert():
-    disp.show(REJECTED_IMAGE, 0, 0)
+    showScreen(REJECTED_IMAGE)
     
     pixels.fill((255, 0, 0))
     pixels.show()
@@ -91,7 +99,7 @@ def card_rejected_alert():
     pixels.fill((0, 0, 0))
     pixels.show()
 
-    disp.show(AWAITING_IMAGE, 0, 0)
+    showScreen(AWAITING_IMAGE)
 
 # === MESSAGE HANDLING ===
 
@@ -156,7 +164,7 @@ client.on_disconnect = on_disconnect
 
 def main():
     connect()
-    disp.show(AWAITING_IMAGE, 0, 0)
+    showScreen(AWAITING_IMAGE)
     scanning_loop()
 
 if __name__ == '__main__':
