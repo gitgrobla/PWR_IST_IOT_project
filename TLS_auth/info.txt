@@ -1,0 +1,37 @@
+CA common name: CA
+CA passphrase: admin
+
+Server      common name: 10.108.33.122
+Hub         common name: 10.108.33.122
+Client_1    common name: 10.108.33.123
+
+
+# ========users=========
+login       :   password
+------------------------
+hub         :   admin
+client_1    :   client
+------------------------
+
+sudo chmod o+x ./configure*
+
+
+# Python hub.py
+
+broker = "10.108.33.122"
+port = 8883
+client = mqtt.Client()
+client.tls_set(ca_certs="./certs/ca", certfile="./certs/hub.crt", keyfile="./certs/hub.key")
+client.username_pw_set("hub", "admin")
+
+##########################################
+
+# Python client.py
+
+broker = "10.108.33.122"
+port = 8883
+client = mqtt.Client()
+client.tls_set(ca_certs="./certs/ca", certfile="./certs/client_1.crt", keyfile="./certs/client_1.key")
+client.username_pw_set("client_1", "client")
+
+###########################################
