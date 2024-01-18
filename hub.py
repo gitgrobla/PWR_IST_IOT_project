@@ -2,6 +2,7 @@
 # from config import *  # pylint: disable=unused-wildcard-import
 from datetime import datetime
 import paho.mqtt.client as mqtt
+import db as repository
 
 REQUESTS_TOPICS = "parking/requests"
 CLIENT_TOPIC_URI = "parking/client"
@@ -33,9 +34,8 @@ def on_message(client, userdata, message):
     _id = _split[0]
     _uid = _split[1]
     print(f"SERVER: Received message '{message.payload.decode()}' on topic '{message.topic}'")
-
-    # szukamy w DB po nr karty
-    # jesli ta karta jest w DB no to 1 a jesli nie to 0
+    
+   
 
     send_response(_id, 1)
 
