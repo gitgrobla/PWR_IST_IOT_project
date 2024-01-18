@@ -6,8 +6,9 @@ from mfrc522 import MFRC522
 import board
 import neopixel
 import time
-from PIL import Image, ImageOps
+import db
 import lib.oled.SSD1331 as SSD1331
+
 
 
 MY_ID = 1
@@ -89,7 +90,7 @@ def scanning_loop():
                 and not REQ_STATUS:
                 
                 card_id = uid_to_number(uid)
-                print(card_id)
+                return card_id
 
 
 
@@ -117,6 +118,60 @@ def on_message(client, userdata, message):
 
 
 
+
+
+
+# ==== TUI =====
+
+def tui():
+
+    option = -1
+
+    while(option != 0):
+
+        print("0 - exit")
+        print("1 - add card to employee")
+        print("2 - add employee")
+        print("3 - block cart")
+        print("4 - block cart employee")
+        print("5 - unlock cart")
+
+        try:
+            option = int(input(">"))
+        except ValueError:
+            print("Error input")
+            continue
+
+        if(option == 1):
+            
+        else if(option == 2):
+            tui_add_employee()
+        else if(option == 3):
+
+        else if(option == 4):
+
+        else if(option == 5):
+        
+
+def tui_add_employee():
+
+    while(name != null and last_name != null)
+        try:
+            name = input("Name: ")
+            lastName = input("Lastname:")
+        except ValueError:
+            print("Error input")
+            continue
+    
+    if(add_employee(name , last_name)):
+        print("Added")
+    else:
+        print("Database error")
+
+
+def tui_add_card_employee():
+    
+    
 
 
 
