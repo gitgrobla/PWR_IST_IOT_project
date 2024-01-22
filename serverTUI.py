@@ -144,24 +144,24 @@ def tui():
 
         if(option == 1):
             tui_add_card_employee
-        else if(option == 2):
+        elif(option == 2):
             tui_add_employee()
-        else if(option == 3):
+        elif(option == 3):
             print(option)
-        else if(option == 4):
+        elif(option == 4):
             print(option)
-        else if(option == 5):
+        elif(option == 5):
             print(option)
 
 
 def get_name_and_lastname():
-        while(name != null and last_name != null)
-        try:
-            name = input("Name: ")
-            lastName = input("Lastname:")
-        except ValueError:
-            print("Error input")
-            continue 
+        while(name != null and last_name != null):
+            try:
+                name = input("Name: ")
+                lastName = input("Lastname:")
+            except ValueError:
+                print("Error input")
+                continue
             
         return name,last_name
 
@@ -183,7 +183,7 @@ def tui_add_card_employee():
 
     if(len(employeeList) == 0):
         print("Wrong name and lastname")
-    else if (len(employeeList) > 1):
+    elif (len(employeeList) > 1):
 
         for employee in employeeList:
             print(f"ID: {pracownik[0]}, Name: {pracownik[1]}, Lastname: {pracownik[2]}")
@@ -222,3 +222,5 @@ if __name__ == '__main__':
     
     try:
         main()
+    except:
+        pass
