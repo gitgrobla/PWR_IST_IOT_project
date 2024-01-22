@@ -6,7 +6,7 @@ from mfrc522 import MFRC522
 import board
 import neopixel
 import time
-import db
+import db 
 import lib.oled.SSD1331 as SSD1331
 
 
@@ -135,6 +135,7 @@ def tui():
         print("3 - block cart")
         print("4 - block cart employee")
         print("5 - unlock cart")
+        print("6 - unlock cart employee")
 
         try:
             option = int(input(">"))
@@ -143,19 +144,21 @@ def tui():
             continue
 
         if(option == 1):
-            tui_add_card_employee
+            tui_add_card_employee()
         elif(option == 2):
             tui_add_employee()
         elif(option == 3):
-            print(option)
+            tui_block_cart()
         elif(option == 4):
-            print(option)
+            tui_block_card_employee()
         elif(option == 5):
             print(option)
+        elif(option == 6):
+            print(option) #TODO
 
 
 def get_name_and_lastname():
-        while(name != null and last_name != null):
+        while(name != null and lastName != null):
             try:
                 name = input("Name: ")
                 lastName = input("Lastname:")
@@ -163,13 +166,13 @@ def get_name_and_lastname():
                 print("Error input")
                 continue
             
-        return name,last_name
+        return name,lastName
 
 def tui_add_employee():
 
     nameAndLastname = get_name_and_lastname()
     
-    if(add_employee(nameAndLastname[0] , last_name[1])):
+    if(add_employee(nameAndLastname[0] , nameAndLastname[1])):
         print("Added")
     else:
         print("Database error")
@@ -208,6 +211,63 @@ def tui_add_card_employee():
             print("Error database")
     else:
         print("Wrong name and lastname or ID")
+
+
+def tui_block_cart():
+
+    cardId = scanning_loop()
+    
+    if(block_card(cardId)):
+        print("Blocked")
+    else:
+        print("Database error")
+
+
+
+def tui_block_card_employee():
+
+    nameAndLastname = get_name_and_lastname()
+
+    employeeList = get_employee_id(nameAndLastname[0] , nameAndLastname[1])
+
+    if(len(employeeList) == 0):
+        print("Wrong name and lastname")
+    elif (len(employeeList) > 1):
+
+        for employee in employeeList:
+            print(f"ID: {pracownik[0]}, Name: {pracownik[1]}, Lastname: {pracownik[2]}")
+        
+        selectedId = int(input("Enter the employee ID to choose: "))
+
+        for employee in employeeList:
+            if employee[0] == selectedId:
+                employeeId = employee[0]
+                break
+        
+        
+    else:
+        employeeId = employeeList[0][0]
+
+    if(employeeId != null):
+        if():#TODO
+            print("Blocked")
+        else:
+            print("Database error")
+    else:
+        print("Wrong name and lastname or ID")
+
+
+
+def tui_unlock_cart():
+
+    cardId = scanning_loop()
+    
+    if(unlock_card(cardId)):
+        print("Unlocked")
+    else:
+        print("Database error")
+
+
         
 
 
