@@ -144,33 +144,40 @@ def tui():
 
         if(option == 1):
             tui_add_card_employee()
+
         elif(option == 2):
             tui_add_employee()
+
         elif(option == 3):
             tui_block_cart()
+
         elif(option == 4):
             tui_block_card_employee()
+
         elif(option == 5):
-            print(option)
+            tui_unlock_card_employee()
 
 
 
 def get_name_and_lastname():
-        while(name != null and lastName != null):
-            try:
-                name = input("Name: ")
-                lastName = input("Lastname:")
-            except ValueError:
-                print("Error input")
-                continue
-            
-        return name,lastName
+    name = ""
+    lastName = ""
+
+    while(name == "" or lastName == ""):
+        try:
+            name = input("Name: ")
+            lastName = input("Lastname:")
+        except ValueError:
+            print("Error input")
+            continue
+        
+    return name,lastName
 
 def tui_add_employee():
 
     nameAndLastname = get_name_and_lastname()
     
-    if(add_employee(nameAndLastname[0] , nameAndLastname[1])):
+    if(db.add_employee(nameAndLastname[0] , nameAndLastname[1])):
         print("Added")
     else:
         print("Database error")
@@ -180,30 +187,31 @@ def tui_add_card_employee():
 
     nameAndLastname = get_name_and_lastname()
 
-    employeeList = get_employee_id(nameAndLastname[0] , nameAndLastname[1])
+    employeeList = db.get_employee_by_personal_data(nameAndLastname[0] , nameAndLastname[1])
 
     if(len(employeeList) == 0):
         print("Wrong name and lastname")
+        return
     elif (len(employeeList) > 1):
 
         for employee in employeeList:
-            print(f"ID: {pracownik[0]}, Name: {pracownik[1]}, Lastname: {pracownik[2]}")
+            print(f"ID: {employee[2]}, Name: {employee[0]}, Lastname: {employee[1]}")
         
         selectedId = int(input("Enter the employee ID to choose: "))
 
         for employee in employeeList:
-            if employee[0] == selectedId:
-                employeeId = employee[0]
+            if employee[2] == selectedId:
+                employeeId = employee[2]
                 break
         
-        
+        print(employeeId)
     else:
-        employeeId = employeeList[0][0]
+        employeeId = employeeList[0][2]
 
-    if(employeeId != null):
+    if(employeeId != None):
         cardId = scanning_loop()
         
-        if(add_employee_card(cardId,employeeId)):
+        if(db.add_employee_card(cardId,employeeId)):
             print("Added")
         else:
             print("Error database")
@@ -226,28 +234,29 @@ def tui_block_card_employee():
 
     nameAndLastname = get_name_and_lastname()
 
-    employeeList = get_employee_id(nameAndLastname[0] , nameAndLastname[1])
+    employeeList = db.get_employee_by_personal_data(nameAndLastname[0] , nameAndLastname[1])
 
     if(len(employeeList) == 0):
         print("Wrong name and lastname")
+        return
     elif (len(employeeList) > 1):
 
         for employee in employeeList:
-            print(f"ID: {pracownik[0]}, Name: {pracownik[1]}, Lastname: {pracownik[2]}")
+            print(f"ID: {employee[2]}, Name: {employee[0]}, Lastname: {employee[1]}")
         
         selectedId = int(input("Enter the employee ID to choose: "))
 
         for employee in employeeList:
-            if employee[0] == selectedId:
-                employeeId = employee[0]
+            if employee[2] == selectedId:
+                employeeId = employee[2]
                 break
         
-        
+        print(employeeId)
     else:
-        employeeId = employeeList[0][0]
+        employeeId = employeeList[0][2]
 
-    if(employeeId != null):
-        if(block_card_by_employee_id(employeeId)):
+    if(employeeId != None):
+        if(db.block_card_by_employee_id(employeeId)):
             print("Blocked")
         else:
             print("Database error")
@@ -260,29 +269,30 @@ def tui_unlock_card_employee():
 
     nameAndLastname = get_name_and_lastname()
 
-    employeeList = get_employee_id(nameAndLastname[0] , nameAndLastname[1])
+    employeeList = db.get_employee_by_personal_data(nameAndLastname[0] , nameAndLastname[1])
 
     if(len(employeeList) == 0):
         print("Wrong name and lastname")
+        return
     elif (len(employeeList) > 1):
 
         for employee in employeeList:
-            print(f"ID: {pracownik[0]}, Name: {pracownik[1]}, Lastname: {pracownik[2]}")
+            print(f"ID: {employee[2]}, Name: {employee[0]}, Lastname: {employee[1]}")
         
         selectedId = int(input("Enter the employee ID to choose: "))
 
         for employee in employeeList:
-            if employee[0] == selectedId:
-                employeeId = employee[0]
+            if employee[2] == selectedId:
+                employeeId = employee[2]
                 break
         
-        
+        print(employeeId)
     else:
-        employeeId = employeeList[0][0]
+        employeeId = employeeList[0][2]
 
-    if(employeeId != null):
-        if(unlock_card_by_employee_id(employeeId)):
-            print("Blocked")
+    if(employeeId != None):
+        if(db.unlock_card_by_employee_id(employeeId)):
+            print("Unlocked")
         else:
             print("Database error")
     else:
@@ -298,11 +308,11 @@ def tui_unlock_card_employee():
 
 
 def main():
-    scanning_loop()
+    tui()
 
 if __name__ == '__main__':
     
     try:
         main()
-    except:
-        pass
+    except Exception as e:
+        print(e)
