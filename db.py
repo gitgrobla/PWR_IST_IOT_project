@@ -2,14 +2,26 @@
 
 import datetime
 import sqlite3
-import os, sys
+import os, sys, random
 
-from typing import Dict
+from typing import Dict, Tuple, Optional, List
 
 # This should be changed. We can also create new folder and path where we can store our database. 
 DEFAULT_PROJECT_DATABASE_PATH = "C:\\Users\\trine\\OneDrive\\Pulpit\\STUDIA\\SEMESTR 5\\BAZY\\LABY\\iot_database.db" 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 SYSTEM_VAR_NAME = "IOT_PROJECT_DATABASE_PATH"
+
+NO_RESULT = 1
+NO_EXIT = 2
+EXIT_ALREADY_SAVED = 3
+
+EmployeeTuple = Tuple[str, str, str] # NAME, LAST NAME, ID
+
+
+RFIDS = [];
+IS_BLOCKED_BOOLS = [False, False, False, True]
+EMPLOYEES_NAMES = ["John", "Donald", "Taylor", ""]
+EMPLOYEES_LASTNAMES = ["Cena", "Duck", "Swift" ""]
 
 class WorkRegister:
 
@@ -175,7 +187,7 @@ def get_timedelta(date1: str, date2: str) -> int:
     return int(timedelta.total_seconds() / 60)
 
 
-def get_employee_work_register(employee_id, start_date: datetime.datetime, end_date: datetime.datetime = datetime.datetime.now()):
+def get_employee_work_register(employee_id, start_date: datetime.datetime, end_date: datetime.datetime = datetime.datetime.now()) -> WorkRegister:
     if end_date < start_date: return None
 
     try:
@@ -203,6 +215,7 @@ def get_employee_work_register(employee_id, start_date: datetime.datetime, end_d
     except sqlite3.Error as e:
         print("Error during connection with database: ", e, file=sys.stderr)
         return None;
+
 
 def get_all_employees_work_registers(start_date: datetime.datetime, end_date: datetime.datetime = datetime.datetime.now()) -> Dict[int, WorkRegister]:
     if end_date < start_date: return None
@@ -244,14 +257,102 @@ def get_all_employees_work_registers(start_date: datetime.datetime, end_date: da
         print("Error during connection with database: ", e, file=sys.stderr)
         return None;
 
+
 def block_card(card_id) -> bool:
     query = f"UPDATE Cards SET is_blocked = 1 WHERE id = {card_id}"
     return execute_query(query)
 
-def unlock_card(card_id) -> bool:
-    query = f"UPDATE Cards SET is_blocked = 0 WHERE id = {card_id}"
+
+def block_card_by_employee_id(employee_id) -> bool:
+    query = f"UPDATE Cards SET is_blocked = 1 WHERE id = {employee_id}"
     return execute_query(query)
 
+
+def unlock_card_by_employee_id(employee_id) -> bool:
+    query = f"UPDATE Cards SET is_blocked = 0 WHERE id = {employee_id}"
+    return execute_query(query)
+
+
+def generate_random_date_pair() -> Tuple[datetime.datetime, datetime.datetime]:
+    random_date = datetime.datetime.now() + datetime.timedelta(days=random.randint(1, 365), hours=random.randint(0, 23), minutes=random.randint(0, 59))
+
+    random_date_later = random_date + datetime.timedelta(hours=random.randint(0, 12))
+
+    return random_date, random_date_later
+
+
+def fill_database_with_init_data() -> None:
+
+    for name, last_name in zip(EMPLOYEES_NAMES, EMPLOYEES_LASTNAMES):
+        add_employee(name, last_name)
+
+
+def get_last_employee_presences(employee_id: int) -> Tuple[int, Optional[Tuple]]:
+
+    try:
+        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
+            cursor = connection.cursor()
+            query = f"SELECT * FROM (SELECT * FROM Presences WHERE employee_id = {employee_id} ORDER BY entry_date) WHERE ROWNUM = 1"
+
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            if result == None:
+                return (NO_RESULT, None)
+            
+            if result.count == 1:
+                last_presence = result[0]
+                last_presence_exit_date = last_presence[4]
+                if last_presence_exit_date == None:
+                    return (NO_EXIT, last_presence)
+                else:
+                    return (EXIT_ALREADY_SAVED, last_presence)
+                
+            raise ValueError("Database error")
+
+    except Exception as e:
+        print(e, file=sys.stderr)
+
+
+def get_employee(query: str) -> List[EmployeeTuple]:
+    try:
+        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
+            cursor = connection.cursor()
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            return [] if result == None else result
+        
+    except Exception as e:
+        print(e, file=sys.stderr)
+        
+
+def get_employee_by_personal_data(name: str, last_name: str) -> List[EmployeeTuple]:
+    return get_employee(f"SELECT name, last_name, id FROM Employees WHERE name = '{name}' AND last_name = '{last_name}' ORDER BY 1,2,3")
+        
+
+def get_employee_by_id(employee_id: int) -> List[EmployeeTuple]:
+    return get_employee(f"SELECT name, last_name, id FROM Employees WHERE id = {employee_id} ORDER BY 1,2,3")
+
+
+def get_all_employees_data(has_blocked_card: bool = True) -> List[EmployeeTuple]:
+    try:
+        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
+            cursor = connection.cursor()
+            is_blocked_as_int = 1 if has_blocked_card else 0
+            if has_blocked_card:
+                query = f"""SELECT E.name name, E.last_name last_name, E.id id
+                            FROM (Employees E JOIN Employees_cards EC ON E.id = EC.card_id) Q JOIN Cards C ON Q.card_id = C.id 
+                            WHERE C.is_blocked = {is_blocked_as_int}
+                            ORDER BY 1, 2, 3""";
+
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            return [] if result == None else result
+        
+    except Exception as e:
+        print(e, file=sys.stderr)
 
 
 def main():
@@ -281,6 +382,9 @@ def main():
         print(wr)
 
     block_card(3)
+
+    print(get_all_employees_data())
+    print(get_employee_by_personal_data("Donald", "Duck"))
 
 
 if __name__ == '__main__':
