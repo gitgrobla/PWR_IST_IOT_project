@@ -8,6 +8,7 @@ import neopixel
 import time
 from PIL import Image, ImageOps
 import lib.oled.SSD1331 as SSD1331
+import os
 
 
 MY_ID = 1
@@ -30,9 +31,9 @@ disp.clear()
 
 DISPLAY_SIZE = (disp.width, disp.height)
 
-REJECTED_IMAGE = Image.open("./Images/rejected_icon.png")
-ACCEPTED_IMAGE = Image.open("./Images/accepted_icon.png")
-AWAITING_IMAGE = Image.open("./Images/awaiting_icon.png")
+REJECTED_IMAGE = "./Images/rejected_icon.png"
+ACCEPTED_IMAGE = "./Images/accepted_icon.png"
+AWAITING_IMAGE = "./Images/awaiting_icon.png"
 
 
 # === CONNECTION ===
@@ -54,9 +55,9 @@ def on_disconnect(client, userdata, rc):
 
 # === ALERTS ===
 
-def showScreen(image):
+def showScreen(path):
     disp.clear()
-    #image = Image.open(path)
+    image = Image.open(path)
     #draw = ImageDraw.Draw(image)
     disp.ShowImage(image,0,0)
 
@@ -164,6 +165,7 @@ client.on_disconnect = on_disconnect
 
 def main():
     connect()
+    os.system('sudo systemctl stop ip-oled.service')
     showScreen(AWAITING_IMAGE)
     scanning_loop()
 
