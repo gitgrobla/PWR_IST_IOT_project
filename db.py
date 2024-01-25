@@ -7,7 +7,7 @@ import os, sys, random
 from typing import Dict, Tuple, Optional, List
 
 # This should be changed. We can also create new folder and path where we can store our database. 
-DEFAULT_PROJECT_DATABASE_PATH = "C:\\Users\\trine\\OneDrive\\Pulpit\\STUDIA\\SEMESTR 5\\BAZY\\LABY\\iot_database.db" 
+DEFAULT_PROJECT_DATABASE_PATH = "./iot_database.db" 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 SYSTEM_VAR_NAME = "IOT_PROJECT_DATABASE_PATH"
 
@@ -42,7 +42,7 @@ def get_sys_var(name) -> str:
     if sys_var_value is not None: return sys_var_value
     return DEFAULT_PROJECT_DATABASE_PATH
 
-def create_database(db_name: str, dropped_old_db: bool = True):
+def create_database(db_name: str = DEFAULT_PROJECT_DATABASE_PATH, dropped_old_db: bool = True):
 
     if dropped_old_db and os.path.exists(db_name):
         os.remove(db_name)
@@ -158,7 +158,45 @@ def add_card(rfid: int, is_blocked: bool) -> bool:
 
     return execute_query( f"INSERT INTO Cards(rfid, is_blocked) VALUES ({rfid}, {is_blocked_as_int})")
 
+def get_employee_id_by_card_id(card_id: int) -> int:
+    try:
+        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
+            cursor = connection.cursor()
 
+            query = f"SELECT employee_id FROM Employees_cards WHERE card_id = {card_id}"
+
+            cursor.execute(query)
+
+            result = cursor.fetchone()
+
+            if result == None:
+                return None
+
+            return result[0]
+
+    except sqlite3.Error as e:
+        print("Error during connection with database: ", e, file=sys.stderr)
+        return None;
+
+def get_card_by_rfid(rfid: int) -> int:
+    try:
+        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
+            cursor = connection.cursor()
+
+            query = f"SELECT * FROM Cards WHERE rfid = {rfid}"
+
+            cursor.execute(query)
+
+            result = cursor.fetchone()
+
+            if result == None:
+                return None
+
+            return result
+
+    except sqlite3.Error as e:
+        print("Error during connection with database: ", e, file=sys.stderr)
+        return None;
 
 def add_employee_card(card_id: int, employee_id: int) -> bool:
 
@@ -292,18 +330,18 @@ def get_last_employee_presences(employee_id: int) -> Tuple[int, Optional[Tuple]]
     try:
         with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
             cursor = connection.cursor()
-            query = f"SELECT * FROM (SELECT * FROM Presences WHERE employee_id = {employee_id} ORDER BY entry_date) WHERE ROWNUM = 1"
+            query = f"SELECT * FROM Presences WHERE employee_id = {employee_id} ORDER BY entry_date DESC LIMIT 1"
 
             cursor.execute(query)
             result = cursor.fetchall()
-
-            if result == None:
+            print(result)
+            if result == []:
                 return (NO_RESULT, None)
             
-            if result.count == 1:
+            if len(result) == 1:
                 last_presence = result[0]
                 last_presence_exit_date = last_presence[4]
-                if last_presence_exit_date == None:
+                if last_presence_exit_date == 'NULL':
                     return (NO_EXIT, last_presence)
                 else:
                     return (EXIT_ALREADY_SAVED, last_presence)
@@ -355,37 +393,40 @@ def get_all_employees_data(has_blocked_card: bool = True) -> List[EmployeeTuple]
         print(e, file=sys.stderr)
 
 
-def main():
-    db_path = get_sys_var(SYSTEM_VAR_NAME)
-    create_database(db_path, True)
-    add_card(1, 0)
-    add_card(2, 1)
-    add_card(3, 0)
-    add_card(4, 0)
-    add_employee("John", "Smith")
-    add_employee("Eva", "Stone")
-    add_employee("Donald", "Duck")
-    add_employee_card(1, 1)
-    add_employee_card(2, 2)
-    add_employee_card(3, 3)
-    add_presence(1, 1, datetime.datetime.now(), 1)
-    # add_presence(2, 2, datetime.datetime.now(), 2)
-    add_presence(3, 3, datetime.datetime.now(), 3)
+# def main():
+#     db_path = get_sys_var(SYSTEM_VAR_NAME)
+#     create_database(db_path, True)
+#     add_card(1, 0)
+#     add_card(2, 1)
+#     add_card(3, 0)
+#     add_card(4, 0)
+#     add_employee("John", "Smith")
+#     add_employee("Eva", "Stone")
+#     add_employee("Donald", "Duck")
+#     add_employee_card(1, 1)
+#     add_employee_card(2, 2)
+#     add_employee_card(3, 3)
+#     add_presence(1, 1, datetime.datetime.now(), 1)
+#     # add_presence(2, 2, datetime.datetime.now(), 2)
+#     add_presence(3, 3, datetime.datetime.now(), 3)
 
-    # add_exit(1, datetime.datetime(2023, 1, 14, 3, 2, 1), 10)
+#     # add_exit(1, datetime.datetime(2023, 1, 14, 3, 2, 1), 10)
 
-    wr = get_employee_work_register(1, datetime.datetime(2023, 1, 1, 0, 0, 0), datetime.datetime.now())
-    print(wr)
+#     wr = get_employee_work_register(1, datetime.datetime(2023, 1, 1, 0, 0, 0), datetime.datetime.now())
+#     print(wr)
 
-    wr_dict = get_all_employees_work_registers(datetime.datetime(2023, 1, 1, 0, 0, 0), datetime.datetime.now())
-    for _, wr in wr_dict.items():
-        print(wr)
+#     wr_dict = get_all_employees_work_registers(datetime.datetime(2023, 1, 1, 0, 0, 0), datetime.datetime.now())
+#     for _, wr in wr_dict.items():
+#         print(wr)
 
-    block_card(3)
+#     block_card(3)
 
-    print(get_all_employees_data())
-    print(get_employee_by_personal_data("Donald", "Duck"))
+#     print(get_all_employees_data())
+#     print(get_employee_by_personal_data("Donald", "Duck"))
 
 
 if __name__ == '__main__':
-    main();
+    create_database()
+    fill_database_with_init_data()
+    add_card(1, False)
+    add_employee_card(1,1)
