@@ -6,10 +6,10 @@ from mfrc522 import MFRC522
 import board
 import neopixel
 import time
-import db
+import db 
 import lib.oled.SSD1331 as SSD1331
 
-
+from typing import Dict, Tuple, Optional, List
 
 MY_ID = 1
 REQ_STATUS = False
@@ -90,6 +90,7 @@ def scanning_loop():
                 and not REQ_STATUS:
                 
                 card_id = uid_to_number(uid)
+                buzzer_accept()
                 return card_id
 
 
@@ -132,9 +133,10 @@ def tui():
         print("0 - exit")
         print("1 - add card to employee")
         print("2 - add employee")
-        print("3 - block cart")
-        print("4 - block cart employee")
-        print("5 - unlock cart")
+        print("3 - block card")
+        print("4 - block card employee")
+        print("5 - unlock card employee")
+        print("6 - raport")
 
         try:
             option = int(input(">"))
@@ -143,33 +145,60 @@ def tui():
             continue
 
         if(option == 1):
-            tui_add_card_employee
-        else if(option == 2):
+            tui_add_card_employee()
+
+        elif(option == 2):
             tui_add_employee()
-        else if(option == 3):
-            print(option)
-        else if(option == 4):
-            print(option)
-        else if(option == 5):
-            print(option)
+
+        elif(option == 3):
+            tui_block_card()
+
+        elif(option == 4):
+            tui_block_card_employee()
+
+        elif(option == 5):
+            tui_unlock_card_employee()
+
+        elif(option == 6):
+            raport()
+
+
+def raport():
+
+    raport = db.get_all_employees_work_registers(datetime(2000,1,1))
+
+    print_work_registers(raport)
+
+
+
+def print_work_registers(work_registers: Dict[int, db.WorkRegister]):
+    for employee_id, work_register in work_registers.items():
+        print(f"Employee ID: {employee_id}")
+        print(f"Number of Entries: {work_register.entries_num}")
+        print(f"Number of Exits: {work_register.exits_num}")
+        print(f"Total Work Hours: {work_register.work_hours}")
+        print("\n") 
 
 
 def get_name_and_lastname():
-        while(name != null and last_name != null)
+    name = ""
+    lastName = ""
+
+    while(name == "" or lastName == ""):
         try:
             name = input("Name: ")
             lastName = input("Lastname:")
         except ValueError:
             print("Error input")
-            continue 
-            
-        return name,last_name
+            continue
+        
+    return name,lastName
 
 def tui_add_employee():
 
     nameAndLastname = get_name_and_lastname()
     
-    if(add_employee(nameAndLastname[0] , last_name[1])):
+    if(db.add_employee(nameAndLastname[0] , nameAndLastname[1])):
         print("Added")
     else:
         print("Database error")
@@ -179,36 +208,135 @@ def tui_add_card_employee():
 
     nameAndLastname = get_name_and_lastname()
 
-    employeeList = get_employee_id(nameAndLastname[0] , nameAndLastname[1])
+    employeeList = db.get_employee_by_personal_data(nameAndLastname[0] , nameAndLastname[1])
 
     if(len(employeeList) == 0):
         print("Wrong name and lastname")
-    else if (len(employeeList) > 1):
+        return
+    elif (len(employeeList) > 1):
 
         for employee in employeeList:
-            print(f"ID: {pracownik[0]}, Name: {pracownik[1]}, Lastname: {pracownik[2]}")
+            print(f"ID: {employee[2]}, Name: {employee[0]}, Lastname: {employee[1]}")
         
         selectedId = int(input("Enter the employee ID to choose: "))
 
         for employee in employeeList:
-            if employee[0] == selectedId:
-                employeeId = employee[0]
+            if employee[2] == selectedId:
+                employeeId = employee[2]
                 break
         
-        
+        print(employeeId)
     else:
-        employeeId = employeeList[0][0]
+        employeeId = employeeList[0][2]
 
-    if(employeeId != null):
+    if(employeeId != None):
+        print("Przyloz karte")
         cardId = scanning_loop()
+        print(cardId)
+        print(employeeId)
+
+        if(db.add_card(cardId,0)):
+            print("Zarejestrowano karte")
+        else:
+            buzzer_reject()
+            print("Karta jest już zajeta")
+            return
+
         
-        if(add_employee_card(cardId,employeeId)):
+
+
+        if(db.add_employee_card(db.get_card_by_rfid(cardId)[0],employeeId)):
             print("Added")
         else:
             print("Error database")
     else:
         print("Wrong name and lastname or ID")
+
+
+def tui_block_card():
+
+    cardId = scanning_loop()
+    
+    if(db.block_card(db.get_card_by_rfid(cardId)[0])):
+        print("Blocked")
+    else:
+        print("Database error")
+
+
+
+def tui_block_card_employee():
+
+    nameAndLastname = get_name_and_lastname()
+
+    employeeList = db.get_employee_by_personal_data(nameAndLastname[0] , nameAndLastname[1])
+
+    if(len(employeeList) == 0):
+        print("Wrong name and lastname")
+        return
+    elif (len(employeeList) > 1):
+
+        for employee in employeeList:
+            print(f"ID: {employee[2]}, Name: {employee[0]}, Lastname: {employee[1]}")
         
+        selectedId = int(input("Enter the employee ID to choose: "))
+
+        for employee in employeeList:
+            if employee[2] == selectedId:
+                employeeId = employee[2]
+                break
+        
+        print(employeeId)
+    else:
+        employeeId = employeeList[0][2]
+
+    if(employeeId != None):
+        print(employeeId)
+        if(db.block_card_by_card_id(db.get_card_id_by_employee_id(employeeId))):
+            print("Blocked")
+        else:
+            print("Database error")
+    else:
+        print("Wrong name and lastname or ID")
+
+
+
+def tui_unlock_card_employee():
+
+    nameAndLastname = get_name_and_lastname()
+
+    employeeList = db.get_employee_by_personal_data(nameAndLastname[0] , nameAndLastname[1])
+
+    if(len(employeeList) == 0):
+        print("Wrong name and lastname")
+        return
+    elif (len(employeeList) > 1):
+
+        for employee in employeeList:
+            print(f"ID: {employee[2]}, Name: {employee[0]}, Lastname: {employee[1]}")
+        
+        selectedId = int(input("Enter the employee ID to choose: "))
+
+        for employee in employeeList:
+            if employee[2] == selectedId:
+                employeeId = employee[2]
+                break
+        
+        print(employeeId)
+    else:
+        employeeId = employeeList[0][2]
+
+    if(employeeId != None):
+        print(employeeId)
+
+        if(db.unlock_card_by_card_id(db.get_card_id_by_employee_id(employeeId))):
+            print("Unlocked")
+        else:
+            print("Database error")
+    else:
+        print("Wrong name and lastname or ID")
+
+
+   
 
 
     
@@ -216,9 +344,11 @@ def tui_add_card_employee():
 
 
 def main():
-    scanning_loop()
+    tui()
 
 if __name__ == '__main__':
     
     try:
         main()
+    except Exception as e:
+        print(e)

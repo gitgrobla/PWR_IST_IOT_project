@@ -6,7 +6,7 @@ import db as repository
 
 REQUESTS_TOPICS = "parking/requests"
 CLIENT_TOPIC_URI = "parking/client"
-broker = "localhost"
+broker = "10.108.33.122"
 client = mqtt.Client()
 
 NO_RESULT = 1

@@ -301,13 +301,13 @@ def block_card(card_id) -> bool:
     return execute_query(query)
 
 
-def block_card_by_employee_id(employee_id) -> bool:
-    query = f"UPDATE Cards SET is_blocked = 1 WHERE id = {employee_id}"
+def block_card_by_card_id(card_id) -> bool:
+    query = f"UPDATE Cards SET is_blocked = 1 WHERE id = {card_id}"
     return execute_query(query)
 
 
-def unlock_card_by_employee_id(employee_id) -> bool:
-    query = f"UPDATE Cards SET is_blocked = 0 WHERE id = {employee_id}"
+def unlock_card_by_card_id(card_id) -> bool:
+    query = f"UPDATE Cards SET is_blocked = 0 WHERE id = {card_id}"
     return execute_query(query)
 
 
@@ -364,6 +364,22 @@ def get_employee(query: str) -> List[EmployeeTuple]:
     except Exception as e:
         print(e, file=sys.stderr)
         
+def get_card_id_by_employee_id(employee_id: int) -> int:
+    try:
+        with sqlite3.connect(DEFAULT_PROJECT_DATABASE_PATH) as connection:
+            cursor = connection.cursor()
+            query = f"SELECT card_id FROM Employees_cards WHERE employee_id = {employee_id}"
+
+            cursor.execute(query)
+            result = cursor.fetchone()
+
+            if result == None:
+                return None
+
+            return result[0]
+
+    except Exception as e:
+        print(e, file=sys.stderr)
 
 def get_employee_by_personal_data(name: str, last_name: str) -> List[EmployeeTuple]:
     return get_employee(f"SELECT name, last_name, id FROM Employees WHERE name = '{name}' AND last_name = '{last_name}' ORDER BY 1,2,3")
@@ -428,5 +444,5 @@ def get_all_employees_data(has_blocked_card: bool = True) -> List[EmployeeTuple]
 if __name__ == '__main__':
     create_database()
     fill_database_with_init_data()
-    add_card(1, False)
+    add_card(431117165940, False)
     add_employee_card(1,1)

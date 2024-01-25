@@ -10,7 +10,6 @@ from PIL import Image, ImageOps
 import lib.oled.SSD1331 as SSD1331
 import os
 
-
 MY_ID = 1
 REQ_STATUS = False
 MY_TOPIC = f"parking/client/{MY_ID}"
@@ -41,6 +40,8 @@ AWAITING_IMAGE = "./Images/awaiting_icon.png"
 def connect():
     client.connect(broker, port)
     client.loop_start()
+    os.system('sudo systemctl stop ip-oled.service')
+
 
 def on_connect(client, userdata, flags, rc):
     print(f"Connected with result code {rc}")
@@ -58,7 +59,7 @@ def on_disconnect(client, userdata, rc):
 def showScreen(path):
     disp.clear()
     image = Image.open(path)
-    #draw = ImageDraw.Draw(image)
+    # draw = ImageDraw.Draw(image)
     disp.ShowImage(image,0,0)
 
 def buzzer_state(state):
@@ -165,7 +166,6 @@ client.on_disconnect = on_disconnect
 
 def main():
     connect()
-    os.system('sudo systemctl stop ip-oled.service')
     showScreen(AWAITING_IMAGE)
     scanning_loop()
 
